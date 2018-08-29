@@ -10,7 +10,7 @@ before_script:
 - cd /home/travis/build/
 - echo | pecl install channel://pecl.php.net/yaml-2.0.2
 - pecl install channel://pecl.php.net/crypto-0.3.1
-- git clone https://github.com/krakjoe/pthreads.git
+- git clone https://github.com/pmmp/pthreads.git
 - cd pthreads
 - git checkout c8cfacda84f21032d6014b53e72bf345ac901dac
 - phpize
