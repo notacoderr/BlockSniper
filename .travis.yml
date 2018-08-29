@@ -38,6 +38,8 @@ before_script:
 
 - cp -rf BlockHorizons/BlockSniper/tests PocketMine-MP/plugins/
 
+- ls PocketMine-MP/plugins
+
 script:
 - php travis.php
 
