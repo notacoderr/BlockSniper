@@ -1,138 +1,66 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace BlockHorizons\BlockSniper\sessions;
 
-use BlockHorizons\BlockSniper\brush\Brush;
-use BlockHorizons\BlockSniper\brush\PropertyProcessor;
 use BlockHorizons\BlockSniper\Loader;
 use BlockHorizons\BlockSniper\sessions\owners\PlayerSessionOwner;
-use BlockHorizons\BlockSniper\sessions\owners\ServerSessionOwner;
-use pocketmine\event\Listener;
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\IPlayer;
-use pocketmine\level\Position;
+use pocketmine\Player;
 
-class SessionManager implements Listener {
+class SessionManager{
 
 	/** @var PlayerSession[] */
 	private static $playerSessions = [];
-	/** @var ServerSession[] */
-	private static $serverSessions = [];
-	/** @var Loader */
-	private $loader = null;
-	/** @var int */
-	private $serverSessionCounter = 0;
 
-	public function __construct(Loader $loader) {
-		$this->loader = $loader;
-		//$this->fetchServerSessions($loader);
+	public static function close() : void{
+		foreach(self::$playerSessions as $session){
+			$session->close();
+		}
 	}
 
 	/**
-	 * @param IPlayer $player
+	 * @param Player $player
 	 *
 	 * @return PlayerSession|null
 	 */
-	public static function getPlayerSession(IPlayer $player): ?PlayerSession {
-		return self::$playerSessions[strtolower($player->getName())] ?? null;
+	public static function getPlayerSession(Player $player) : ?PlayerSession{
+		if($player->hasPermission("blocksniper.command.brush")){
+			/** @var Loader $plugin */
+			$plugin = $player->getServer()->getPluginManager()->getPlugin("BlockSniper");
+			self::createPlayerSession($player->getName(), $plugin);
+		}
+
+		return self::$playerSessions[$player->getName()] ?? null;
 	}
 
 	/**
+	 * @param string $playerName
 	 * @param Loader $loader
 	 */
-	public function fetchServerSessions(Loader $loader): void {
-		if(!file_exists($loader->getDataFolder() . "serverSessions.json")) {
-			$this->createInitialSessionFile($loader);
+	public static function createPlayerSession(string $playerName, Loader $loader) : void{
+		if(self::playerSessionExists($playerName)){
+			return;
 		}
-		foreach(json_decode(file_get_contents($loader->getDataFolder() . "serverSessions.json"), true) as $session) {
-			if(($level = $loader->getServer()->getLevelByName($session["targetBlock"]["level"])) === null) {
-				continue;
-			}
-			$i = $session["targetBlock"];
-			$position = new Position((int) $i["x"], (int) $i["y"], (int) $i["z"], $level);
-			self::$serverSessions[$id = $this->serverSessionCounter++] = new ServerSession(new ServerSessionOwner(), $loader);
-			self::$serverSessions[$id]->setTargetBlock($position);
-
-			$processor = new PropertyProcessor(self::$serverSessions[$id], $loader);
-			foreach($session["brush"] as $property => $value) {
-				$processor->process($property, $value);
-			}
-			self::$serverSessions[$id]->setName($session["name"]);
-		}
+		self::$playerSessions[$playerName] = new PlayerSession(new PlayerSessionOwner($playerName), $loader);
 	}
 
 	/**
-	 * @param Loader $loader
+	 * @param string $playerName
 	 *
 	 * @return bool
 	 */
-	private function createInitialSessionFile(Loader $loader): bool {
-		if(!file_exists($loader->getDataFolder() . "serverSessions.json")) {
-			file_put_contents($loader->getDataFolder() . "serverSessions.json", json_encode([
-				[
-					"targetBlock" => [
-						"level" => "MyWorld",
-						"x" => 256,
-						"y" => 128,
-						"z" => 256
-					],
-					"brush" => (new Brush(""))->jsonSerialize(),
-					"name" => "ExampleGlobalBrush"
-				]
-			]));
-			return true;
+	public static function playerSessionExists(string $playerName) : bool{
+		return isset(self::$playerSessions[$playerName]);
+	}
+
+	/**
+	 * @param string $playerName
+	 */
+	public static function closeSession(string $playerName) : void{
+		if(self::playerSessionExists($playerName)){
+			self::$playerSessions[$playerName]->close();
+			unset(self::$playerSessions[$playerName]);
 		}
-		return false;
-	}
-
-	/**
-	 * @return ServerSession[]
-	 */
-	public function getServerSessions(): array {
-		return self::$serverSessions;
-	}
-
-	/**
-	 * @param PlayerJoinEvent $event
-	 *
-	 * @return bool
-	 */
-	public function initialSessionJoin(PlayerJoinEvent $event): bool {
-		if(!$event->getPlayer()->hasPermission("blocksniper.command.brush")) {
-			return false;
-		}
-		$this->createPlayerSession($event->getPlayer());
-		return true;
-	}
-
-	/**
-	 * @param IPlayer $player
-	 *
-	 * @return bool
-	 */
-	public function createPlayerSession(IPlayer $player): bool {
-		if(self::playerSessionExists($player)) {
-			return false;
-		}
-		self::$playerSessions[strtolower($player->getName())] = new PlayerSession(new PlayerSessionOwner($player), $this->getLoader());
-		return true;
-	}
-
-	/**
-	 * @param IPlayer $player
-	 *
-	 * @return bool
-	 */
-	public static function playerSessionExists(IPlayer $player): bool {
-		return isset(self::$playerSessions[strtolower($player->getName())]);
-	}
-
-	/**
-	 * @return Loader
-	 */
-	public function getLoader(): Loader {
-		return $this->loader;
 	}
 }

@@ -1,12 +1,11 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace BlockHorizons\BlockSniper\brush;
 
 use BlockHorizons\BlockSniper\brush\async\tasks\BrushTask;
 use BlockHorizons\BlockSniper\brush\registration\ShapeRegistration;
-use pocketmine\block\Block;
 use pocketmine\level\Level;
 use pocketmine\level\Position;
 use pocketmine\math\Vector2;
@@ -14,7 +13,7 @@ use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\Server;
 
-abstract class BaseShape {
+abstract class BaseShape{
 
 	const ID = -1;
 
@@ -25,8 +24,8 @@ abstract class BaseShape {
 
 	/** @var int */
 	protected $level = 0;
-	/** @var array */
-	protected $center = [];
+	/** @var Vector3 */
+	protected $center;
 	/** @var bool */
 	protected $hollow = false;
 	/** @var int */
@@ -38,10 +37,10 @@ abstract class BaseShape {
 	/** @var string */
 	protected $playerName = "";
 
-	public function __construct(Player $player, Level $level, Position $center, bool $hollow) {
+	public function __construct(Player $player, Level $level, Position $center, bool $hollow){
 		$this->playerName = $player->getName();
 		$this->level = $level->getId();
-		$this->center = [$center->x, $center->y, $center->z, $center->level->getId()];
+		$this->center = $center->asVector3();
 		$this->hollow = $hollow;
 	}
 
@@ -50,30 +49,30 @@ abstract class BaseShape {
 	 *
 	 * @param $vectorOnly
 	 *
-	 * @return Block[]|Vector3[]
+	 * @return \Generator
 	 */
-	public abstract function getBlocksInside(bool $vectorOnly = false): array;
+	public abstract function getBlocksInside(bool $vectorOnly = false) : \Generator;
 
 	/**
 	 * Returns the approximate amount of processed blocks in the shape. This may not be perfectly accurate.
 	 *
 	 * @return int
 	 */
-	public abstract function getApproximateProcessedBlocks(): int;
+	public abstract function getApproximateProcessedBlocks() : int;
 
 	/**
 	 * @param Server $server
 	 *
 	 * @return Player|null
 	 */
-	public function getPlayer(Server $server): ?Player {
+	public function getPlayer(Server $server) : ?Player{
 		return $server->getPlayer($this->playerName);
 	}
 
 	/**
 	 * @return int
 	 */
-	public function getLevelId(): int {
+	public function getLevelId() : int{
 		return $this->level;
 	}
 
@@ -82,8 +81,8 @@ abstract class BaseShape {
 	 *
 	 * @return Position
 	 */
-	public function getCenter(): Position {
-		return new Position($this->center[0], $this->center[1], $this->center[2], Server::getInstance()->getLevel($this->center[3]));
+	public function getCenter() : Position{
+		return Position::fromObject($this->center, Server::getInstance()->getLevel($this->level));
 	}
 
 	/**
@@ -91,7 +90,7 @@ abstract class BaseShape {
 	 *
 	 * @return bool
 	 */
-	public function isHollow(): bool {
+	public function isHollow() : bool{
 		return $this->hollow;
 	}
 
@@ -100,7 +99,7 @@ abstract class BaseShape {
 	 *
 	 * @return string
 	 */
-	public function getPermission(): string {
+	public function getPermission() : string{
 		return "blocksniper.shape." . strtolower(ShapeRegistration::getShapeById(self::ID, true));
 	}
 
@@ -109,7 +108,7 @@ abstract class BaseShape {
 	 *
 	 * @return string
 	 */
-	public abstract function getName(): string;
+	public abstract function getName() : string;
 
 	/**
 	 * @param BaseType    $type
@@ -117,8 +116,9 @@ abstract class BaseShape {
 	 *
 	 * @return bool
 	 */
-	public function editAsynchronously(BaseType $type, array $plotPoints = []): bool {
+	public function editAsynchronously(BaseType $type, array $plotPoints = []) : bool{
 		$this->getLevel()->getServer()->getAsyncPool()->submitTask(new BrushTask($this, $type, $this->getTouchedChunks(), $plotPoints));
+
 		return true;
 	}
 
@@ -127,14 +127,14 @@ abstract class BaseShape {
 	 *
 	 * @return Level
 	 */
-	public function getLevel(): Level {
+	public function getLevel() : Level{
 		return Server::getInstance()->getLevel($this->level);
 	}
 
 	/**
 	 * @return array
 	 */
-	public abstract function getTouchedChunks(): array;
+	public abstract function getTouchedChunks() : array;
 
 	/**
 	 * @param int $targetX
@@ -145,7 +145,7 @@ abstract class BaseShape {
 	 *
 	 * @return array
 	 */
-	protected function calculateBoundaryBlocks(int $targetX, int $targetY, int $targetZ, int $width, int $height): array {
+	protected function calculateBoundaryBlocks(int $targetX, int $targetY, int $targetZ, int $width, int $height) : array{
 		$minX = $targetX - $width;
 		$minZ = $targetZ - $width;
 		$minY = $targetY - $height;
@@ -154,5 +154,14 @@ abstract class BaseShape {
 		$maxY = $targetY + $height;
 
 		return [$minX, $minY, $minZ, $maxX, $maxY, $maxZ];
+	}
+
+	/**
+	 * @param Vector3 $vector
+	 *
+	 * @return array
+	 */
+	protected function arrayVec(Vector3 $vector) : array{
+		return [$vector->x, $vector->y, $vector->z];
 	}
 }

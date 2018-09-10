@@ -1,60 +1,66 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace BlockHorizons\BlockSniper\brush\types;
 
 use BlockHorizons\BlockSniper\brush\BaseType;
+use BlockHorizons\BlockSniper\brush\Brush;
+use BlockHorizons\BlockSniper\brush\TreeProperties;
 use BlockHorizons\BlockSniper\sessions\SessionManager;
-use pocketmine\block\Block;
 use pocketmine\level\ChunkManager;
-use pocketmine\level\generator\object\Tree;
 use pocketmine\Player;
-use pocketmine\utils\Random;
 
 /*
- * Grows a tree on the target block.
- * This brush can NOT undo.
+ * Grows a custom tree on the target block.
  */
 
-class TreeType extends BaseType {
+class TreeType extends BaseType{
 
 	const ID = self::TYPE_TREE;
 
-	public function __construct(Player $player, ChunkManager $level, array $blocks) {
-		parent::__construct($player, $level, $blocks);
-		$this->center = $player->getTargetBlock(100)->asVector3();
-		$this->tree = SessionManager::getPlayerSession($player)->getBrush()->getTreeType();
+	/** @var Brush */
+	private $brush;
+
+	public function __construct(Player $player, ChunkManager $level){
+		parent::__construct($player, $level);
+		$this->center = $player->getTargetBlock(100)->asPosition();
+		$this->brush = SessionManager::getPlayerSession($player)->getBrush();
 	}
 
 	/**
-	 * @return Block[]
+	 * @return \Generator
 	 */
-	public function fillSynchronously(): array {
-		if($this->myPlotChecked) {
-			return [];
+	public function fillSynchronously() : \Generator{
+		if(false){
+			yield;
 		}
-		Tree::growTree($this->getLevel(), $this->center->x, $this->center->y + 1, $this->center->z, new Random(mt_rand()), $this->tree);
-		return [];
+		$tree = new Tree($this->center, $this->brush, $this);
+		foreach($tree->build() as $block){
+			yield $block;
+		}
 	}
 
-	public function getName(): string {
+	/**
+	 * @return string
+	 */
+	public function getName() : string{
 		return "Tree";
 	}
 
 	/**
-	 * Returns the tree ID of this type.
+	 * Returns the tree properties of this type.
 	 *
-	 * @return int
+	 * @return TreeProperties
 	 */
-	public function getTree(): int {
-		return $this->tree;
+	public function getTree() : TreeProperties{
+		return $this->brush->tree;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function canBeExecutedAsynchronously(): bool {
+	public function canBeExecutedAsynchronously() : bool{
 		return false;
 	}
 }

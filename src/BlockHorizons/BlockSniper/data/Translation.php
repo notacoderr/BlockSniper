@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace BlockHorizons\BlockSniper\data;
 
-class Translation {
+class Translation{
 
 	/**
 	 * These constants are AUTOMATICALLY GENERATED.
@@ -83,6 +83,7 @@ class Translation {
 	const UI_MAIN_MENU_TITLE = "ui.main-menu.title";
 	const UI_MAIN_MENU_SUBTITLE = "ui.main-menu.subtitle";
 	const UI_MAIN_MENU_BRUSH = "ui.main-menu.brush";
+	const UI_MAIN_MENU_TREE = "ui.main-menu.tree";
 	const UI_MAIN_MENU_CONFIG = "ui.main-menu.config";
 	const UI_MAIN_MENU_PRESETS = "ui.main-menu.presets";
 	const UI_MAIN_MENU_GLOBAL_BRUSH = "ui.main-menu.global-brush";
@@ -109,9 +110,17 @@ class Translation {
 	const UI_CONFIGURATION_MENU_RESET_DECREMENT_BRUSH = "ui.configuration-menu.reset-decrement-brush";
 	const UI_CONFIGURATION_MENU_SAVE_BRUSH = "ui.configuration-menu.save-brush";
 	const UI_CONFIGURATION_MENU_DROP_PLANTS = "ui.configuration-menu.drop-plants";
+	const UI_CONFIGURATION_MENU_SESSION_TIMEOUT_TIME = "ui.configuration-menu.session-timeout-time";
 	const UI_CONFIGURATION_MENU_AUTO_GUI = "ui.configuration-menu.auto-gui";
 	const UI_CONFIGURATION_MENU_MYPLOT_SUPPORT = "ui.configuration-menu.myplot-support";
 	const UI_CONFIGURATION_MENU_AUTO_RELOAD = "ui.configuration-menu.auto-reload";
+	const UI_TREE_MENU_TITLE = "ui.tree-menu.title";
+	const UI_TREE_MENU_TRUNK_HEIGHT = "ui.tree-menu.trunk-height";
+	const UI_TREE_MENU_TRUNK_WIDTH = "ui.tree-menu.trunk-width";
+	const UI_TREE_MENU_MAX_BRANCH_LENGTH = "ui.tree-menu.max-branch-length";
+	const UI_TREE_MENU_TRUNK_BLOCKS = "ui.tree-menu.trunk-blocks";
+	const UI_TREE_MENU_LEAVES_BLOCKS = "ui.tree-menu.leaves-blocks";
+	const UI_TREE_MENU_LEAVES_CLUSTER_SIZE = "ui.tree-menu.leaves-cluster-size";
 	const LOG_LANGUAGE_AUTO_SELECTED = "log.language.auto-selected";
 	const LOG_LANGUAGE_USAGE = "log.language.usage";
 	const LOG_LANGUAGE_SELECTED = "log.language.selected";
@@ -148,29 +157,36 @@ class Translation {
 	/** @var array */
 	private $messageData = [];
 
-	public function __construct(TranslationData $data) {
+	public function __construct(TranslationData $data){
 		$this->messageData = $data->getMessages();
 		$reflection = new \ReflectionClass(self::class);
-		foreach($reflection->getConstants() as $constant => $value) {
-			self::$translations[$value] = $this->putMessage($value);
+		foreach($reflection->getConstants() as $constant => $value){
+			if(($msg = $this->putMessage($value)) !== null){
+				self::$translations[$value] = $msg;
+			}
 		}
 	}
 
 	/**
 	 * @param string $key
+	 *
 	 * @return string
 	 */
-	private function putMessage(string $key): string {
+	private function putMessage(string $key) : ?string{
 		$messages = $this->messageData;
 		$path = explode(".", $key);
 		$pathCount = count($path);
 
 		$message = $messages[$path[0]];
-		for($i = 1; $i < $pathCount; $i++) {
-			if(is_array($message)) {
+		for($i = 1; $i < $pathCount; $i++){
+			if(is_array($message)){
+				if(!isset($message[$path[$i]])){
+					return null;
+				}
 				$message = $message[$path[$i]];
 			}
 		}
+
 		return $message;
 	}
 
@@ -180,10 +196,14 @@ class Translation {
 	 *
 	 * @return string
 	 */
-	public static function get(string $key, array $params = []): string {
-		if(!empty($params)) {
+	public static function get(string $key, array $params = []) : string{
+		if(!isset(self::$translations[$key])){
+			return "Unknown message: Please remove your language file and let it regenerate";
+		}
+		if(!empty($params)){
 			return vsprintf(self::$translations[$key], $params);
 		}
+
 		return self::$translations[$key];
 	}
 }
