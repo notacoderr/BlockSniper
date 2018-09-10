@@ -19,6 +19,7 @@ if($json !== false){
 }
 
 file_put_contents("PocketMine-MP/plugins/DevTools.phar", file_get_contents($artifactUrl));
+chdir("PocketMine-MP");
 
 foreach(scandir("PocketMine-MP") as $f){
 	echo "$f\n";
