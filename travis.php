@@ -1,5 +1,25 @@
 <?php
 
+$url = "https://poggit.pmmp.io/releases.json?name=DevTools";
+$json = file_get_contents($url);
+$highestVersion = "0.0.0";
+$artifactUrl = "";
+if($json !== false){
+	$releases = json_decode($json, true);
+	foreach($releases as $release){
+		if(version_compare($highestVersion, $release["version"], ">=")){
+			continue;
+		}
+		$highestVersion = $release["version"];
+		$artifactUrl = $release["artifact_url"];
+	}
+} else {
+	echo "Couldn't get content from $url";
+	exit(1);
+}
+
+file_put_contents("PocketMine-MP/plugins/DevTools.phar", file_get_contents($artifactUrl));
+
 $server = proc_open(PHP_BINARY . " PocketMine-MP/PocketMine-MP.phar --no-wizard --disable-readline", [
 	0 => ['pipe', 'r'],
 	1 => ['pipe', 'w'],
