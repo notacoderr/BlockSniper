@@ -23,6 +23,7 @@ before_script:
 - mkdir PocketMine-MP
 - cd PocketMine-MP
 - export LATEST_RELEASE=$(curl -vs https://api.github.com/repos/pmmp/PocketMine-MP/releases/latest 2>&1 | grep browser_download_url | cut -d '"' -f 4)
+- echo $LATEST_RELEASE
 - curl -O --location $LATEST_RELEASE
 - mkdir -p plugins/BlockSniper
 
