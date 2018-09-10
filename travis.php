@@ -20,6 +20,13 @@ if($json !== false){
 
 file_put_contents("PocketMine-MP/plugins/DevTools.phar", file_get_contents($artifactUrl));
 
+foreach(scandir("PocketMine-MP") as $f){
+	echo "$f\n";
+}
+foreach(scandir("PocketMine-MP/plugins") as $f){
+	echo "$f\n";
+}
+
 $server = proc_open(PHP_BINARY . " PocketMine-MP/PocketMine-MP.phar --no-wizard --disable-readline", [
 	0 => ['pipe', 'r'],
 	1 => ['pipe', 'w'],
